@@ -6,13 +6,14 @@ using namespace std;
 int main() {
 	
 	int processor_num, task_num;
-	struct Processor processor[processor_num];
-	struct Task task[task_num];
 	
 	/* read file */
 	freopen("input.txt", "r", stdin);	// use freopen and it can use scanf instead
 	
 	scanf("%d%d", &processor_num, &task_num);
+	
+	struct Processor processor[processor_num];
+	struct Task task[task_num];
 	
 	for(int i = 0;i < processor_num;++i) 
 		scanf("%d%d", &processor[i].id, &processor[i].ability);

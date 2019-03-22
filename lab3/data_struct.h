@@ -8,9 +8,9 @@ struct Task {
 	int id;
 	int release_t;
 	int exec_t;
-	int wait_t;
-	int start_t;
-	int end_t;
+//	int wait_t;
+//	int start_t;
+//	int end_t;
 	int deadline;
 	int period;
 	int preemption;

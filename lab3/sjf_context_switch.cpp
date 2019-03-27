@@ -22,6 +22,8 @@ void scheduling(int p_num, int t_num) {
 		exec_t.push_back(0);
 	}
 
+	printf("Processor %d\n", p_num);
+
 	while(remain_task > 0) {
 
 		prev_task_id = cur_task_id;
@@ -53,6 +55,7 @@ void scheduling(int p_num, int t_num) {
 
 		//	finish the last one
 		if(finish[prev_task_id]) {
+			
 			// check if current task has started executing 
 			if(exec_t[cur_task_id] != 0) {
 
@@ -64,6 +67,7 @@ void scheduling(int p_num, int t_num) {
 			else
 				printf("%d Task%d ", cur_time, cur_task_id);
 		}
+		
 		
 		//	check the three conditions and do context switch
 		//  1. not first task ->  current time != 0

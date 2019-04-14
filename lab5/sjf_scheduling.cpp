@@ -42,10 +42,6 @@ void scheduling(int p_num, int t_num) {
 		}
 	}
 
-	// for(int i = 0; i < task.size(); ++i) {
-	// 	cout << task[i].id << " " << task[i].release_t << endl;
-	// }
-
 	int cur_time = 0;						// current time
 	bool finish[task.size() + 1];					// record the finished task
 	memset(finish, false, task.size() + 1 );
@@ -53,23 +49,11 @@ void scheduling(int p_num, int t_num) {
 	struct Task next_served = task[0];			// initialize next served as first task
 	int next_served_end_time = 0;
 	int remain_task = task.size();
-
-	/* find the earliest arrival as the first task */
-	for(int i = 0; i < task.size(); ++i)
-		if(task[i].release_t < next_served.release_t)
-			next_served = task[i];
-
-	next_served_end_time = next_served.release_t + next_served.exec_t; 
-	printf("Processor 1:\n");
-	printf("%3d Task%d %3d\n",next_served.release_t,  next_served.id,next_served_end_time); 
-	
-	/* update the full information */
-	cur_time = next_served_end_time;
-	--remain_task;
-	finish[next_served.id] = true;
 	int cur_task_id;
 	int wait_time, cpu_exec = 0;
-
+	
+	printf("Processor 1:\n");
+	
 	/* find the next one (the shortest burst time task) */
 	while(remain_task) {
 		
@@ -81,8 +65,8 @@ void scheduling(int p_num, int t_num) {
 			}
 		}
 		
-		next_served.exec_t = INT_MAX;
 		// find the shortest exec_t as the next served task
+		next_served.exec_t = INT_MAX;
 		for(int i = 0; i < task.size(); ++i) {
 			if(finish[i])
 				continue;
@@ -92,6 +76,7 @@ void scheduling(int p_num, int t_num) {
 			}
 		}
 
+		// no task to do now
 		if(next_served.exec_t == INT_MAX) {
 			++cur_time;
 			continue;
@@ -101,7 +86,7 @@ void scheduling(int p_num, int t_num) {
 		cpu_exec += next_served.exec_t;
 		next_served_end_time = cur_time + next_served.exec_t; 
 		printf("%3d Task%d %3d\n", cur_time,next_served.id, next_served_end_time); 
-		
+
 		// update the full information
 		cur_time = next_served_end_time;
 		--remain_task;

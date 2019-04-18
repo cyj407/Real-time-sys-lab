@@ -8,7 +8,6 @@ vector<struct Task> task;
 int gcd(int a, int b) {
 	if(a == 0)
 		return b;
-
 	return gcd( b%a, a);
 }
 
@@ -25,13 +24,7 @@ int getHyperPeriod(int t_num) {
 	return curLCM;
 }
 
-void scheduling(int p_num, int t_num) {
-	
-	// get the hyper period
-	int hyperPeriod = getHyperPeriod(t_num);
-	printf("Hyper period = %d\n", hyperPeriod);
-
-	// add all tasks in the future
+void addFutureTask(int t_num, int hyperPeriod) {
 	for(int i = 0; i < t_num; ++i) {
 		// original task deadline = next period release time
 		task[i].deadline = 1* task[i].period;
@@ -42,31 +35,32 @@ void scheduling(int p_num, int t_num) {
 			task.push_back(tmp);
 		}
 	}
+}
 
-	// printf("idx id release_t deadline\n");
-	// for(int i = 0; i < task.size(); ++i) {
-	// 	printf("%3d %2d %9d %8d\n", i, task[i].id, task[i].release_t, task[i].deadline);
-	// }
 
-	int exec_t[task.size()];
-	memset(exec_t, 0, sizeof(exec_t));
-	
-	// record the finished task
-	bool finish[task.size() + 1];
+void scheduling(int p_num, int init_t_num) {
+	int hyperPeriod = getHyperPeriod(init_t_num);
+	int deadline;				// save the earliest deadline
+	int cur_time = 0;			// current time
+	int cur_task_i;				// current doing task
+	int pre_task_i = -1;		// previous doing task
+	int wait_time = 0;			// total waiting time
+	int cpu_exec = 0;			// CPU execution time
+	bool no_task = false;		// no task to run now
+
+	addFutureTask(init_t_num, hyperPeriod);	// add all tasks in the future hyperperiod
+
+	bool finish[task.size()];		// record the finished task
+	int exec_time[task.size()];		// save all current execution time
+	memset(exec_time, 0, sizeof(exec_time));
 	memset(finish, false, sizeof(finish));
 	
-	int cur_task_i, pre_task_i = -1;
-	int wait_time = 0, cpu_exec = 0;
+	printf("Hyper period = %d\n", hyperPeriod);
+	printf("Processor %d:\n",processor[0].id + 1);			// single processor
 	
-	printf("Processor 1:\n");			// single processor
-	
-	bool no_task = false;
-	int deadline;
-	int cur_time = 0;
-	/* find the next one (the shortest burst time task) */
 	while(cur_time <= hyperPeriod) {
-		
-		// init the next served as the smallest id task
+
+		// init the next task as the smallest id task and record the deadline
 		for(int i = 0; i < task.size() ; ++i) {
 			if(!finish[i] && task[i].release_t <= cur_time){
 				cur_task_i = i;
@@ -76,7 +70,7 @@ void scheduling(int p_num, int t_num) {
 		}
 		
 		// find the earliest deadline as the next served task
-		if(cur_time == 0 || no_task || finish[pre_task_i]) {
+		if(no_task || finish[pre_task_i]) {
 			deadline = INT_MAX;
 			no_task = false;
 		}
@@ -106,32 +100,27 @@ void scheduling(int p_num, int t_num) {
 			continue;
 		}
 		else {
-			if(pre_task_i != cur_task_i && pre_task_i != -1) {	// pre_task_i initialize = -1
+			// pre_task_i initialize = -1
+			if(pre_task_i != cur_task_i && pre_task_i != -1) {
 				if(!finish[pre_task_i])
 					printf("%3d\n", cur_time);
-				
 				printf("%3d Task%d ", cur_time, task[cur_task_i].id);
 			}
 		}
 
-		++exec_t[cur_task_i];
-		if(task[cur_task_i].exec_t == exec_t[cur_task_i]) {
+		++exec_time[cur_task_i], ++cur_time;
+		pre_task_i = cur_task_i;
+		
+		if(task[cur_task_i].exec_t == exec_time[cur_task_i]) {
 			finish[cur_task_i] = true;
 			cpu_exec += task[cur_task_i].exec_t;
-			wait_time += cur_time+1 - task[cur_task_i].release_t - task[cur_task_i].exec_t;
-			printf("%3d\n", cur_time+1);
+			wait_time += cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
+			printf("%3d\n", cur_time);
 		}
-
-		++cur_time;
-		pre_task_i = cur_task_i;
 	}
 
-	// if(!finish[cur_task_i])
-	// 	printf("%d\n", cur_time);
-	
 	printf("Average Waiting Time = %.2f\n", (float) wait_time/ (float)task.size());
 	printf("CPU utilization = %.2f\n", (float) cpu_exec/ (float) hyperPeriod);
-
 }
 
 int main() {

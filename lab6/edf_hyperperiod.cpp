@@ -17,9 +17,12 @@ int lcm(int a, int b) {
 }
 
 int getHyperPeriod(int t_num) {
-	int curLCM = task[0].period;
-	for(int i = 0; i < t_num; ++i) {
-		curLCM = lcm(curLCM, task[i].period);
+	int curLCM, ptr;
+	for(ptr = 0; task[ptr].period == 0; ++ptr)	;
+	curLCM = task[ptr].period;
+	for(int i = ptr + 1; i < t_num; ++i) {
+		if(task[i].period != 0)
+			curLCM = lcm(curLCM, task[i].period);
 	}
 	return curLCM;
 }

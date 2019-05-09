@@ -71,6 +71,8 @@ bool allTaskfinish(int n, bool finish[]) {
 
 void sjf_non_preem(int p_num, int t_num) {
 	
+	printf("SJF without preemtion\n");
+
 	int hyperPeriod = getHyperPeriod(t_num);
 	printf("Hyper period = %d\n", hyperPeriod);
 
@@ -87,6 +89,9 @@ void sjf_non_preem(int p_num, int t_num) {
 	int cur_time = 0;						// current time
 	bool finish[task.size() + 1];					// record the finished task
 	memset(finish, false, task.size() + 1 );
+
+	int end_time[task.size()];
+	memset(end_time, 0, task.size());
 	
 	struct Task next_served = task[0];			// initialize next served as first task
 	int next_served_end_time = 0;
@@ -124,6 +129,8 @@ void sjf_non_preem(int p_num, int t_num) {
 			continue;
 		}
 
+		task[cur_task_id].wait_t = cur_time - next_served.release_t;
+
 		wait_time += cur_time - next_served.release_t;
 		cpu_exec += next_served.exec_t;
 		next_served_end_time = cur_time + next_served.exec_t; 
@@ -131,17 +138,37 @@ void sjf_non_preem(int p_num, int t_num) {
 
 		// update the full information
 		cur_time = next_served_end_time;
+		end_time[cur_task_id] = cur_time;
 		--remain_task;
 		finish[cur_task_id] = true;
 	}
-	
-	printf("Average Waiting Time = %.2f\n", (float) wait_time/ (float)task.size());
+	float mean = (float) wait_time/(float) task.size();
+	printf("Average Waiting Time = %.2f\n", mean);
 	if(hyperPeriod != 0)
 		printf("CPU utilization = %.2f\n", (float) cpu_exec/ (float) hyperPeriod);
 
+	// calculate miss rate
+	float miss_num = 0.0f;
+	for(int i = 0; i < task.size(); ++i) {
+		if(end_time[i] > task[i].deadline)
+			++miss_num;
+	}
+	printf("Miss rate = %.2f\n", (float) miss_num/task.size());
+
+	// calculate standard deviation and variance
+	float variance = 0.0f;
+	for(int i = 0;i < task.size(); ++i) {
+		variance += (task[i].wait_t - mean)*(task[i].wait_t - mean);
+	}
+	variance /= (task.size()-1);
+	printf("Variation of waiting time = %.2f\n", variance);
+	printf("Standard deviation of waiting time = %.2f\n", sqrt(variance));
 }
 
 void edf_non_preem(int p_num, int init_t_num) {
+
+	printf("EDF without preemtion\n");
+
 	int hyperPeriod = getHyperPeriod(init_t_num);
 	int deadline;				// save the earliest deadline
 	int cur_time = 0;			// current time
@@ -158,6 +185,9 @@ void edf_non_preem(int p_num, int init_t_num) {
 	memset(exec_time, 0, sizeof(exec_time));
 	memset(finish, false, sizeof(finish));
 	
+	int end_time[task.size()];
+	memset(end_time, 0, task.size());
+
 	printf("Hyper period = %d\n", hyperPeriod);
 	printf("Processor %d:\n",processor[0].id + 1);			// single processor
 	
@@ -219,17 +249,41 @@ void edf_non_preem(int p_num, int init_t_num) {
 		if(task[cur_task_i].exec_t == exec_time[cur_task_i]) {
 			finish[cur_task_i] = true;
 			cpu_exec += task[cur_task_i].exec_t;
+		
+			task[cur_task_i].wait_t = cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
+			end_time[cur_task_i] = cur_time;
+
 			wait_time += cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
 			printf("%3d\n", cur_time);
 		}
 	}
-
-	printf("Average Waiting Time = %.2f\n", (float) wait_time/ (float)task.size());
+	float mean = (float) wait_time/(float) task.size();
+	printf("Average Waiting Time = %.2f\n", mean);
 	if(hyperPeriod != 0)
 		printf("CPU utilization = %.2f\n", (float) cpu_exec/ (float) hyperPeriod);
+
+	// calculate miss rate
+	float miss_num = 0.0f;
+	for(int i = 0; i < task.size(); ++i) {
+		if(end_time[i] > task[i].deadline)
+			++miss_num;
+	}
+	printf("Miss rate = %.2f\n", (float) miss_num/task.size());
+
+	// calculate standard deviation and variance
+	float variance = 0.0f;
+	for(int i = 0;i < task.size(); ++i) {
+		variance += (task[i].wait_t - mean)*(task[i].wait_t - mean);
+	}
+	variance /= (task.size()-1);
+	printf("Variation of waiting time = %.2f\n", variance);
+	printf("Standard deviation of waiting time = %.2f\n", sqrt(variance));
 }
 
 void lstf_non_preem(int p_num, int init_t_num) {
+
+	printf("LSTF without preemtion\n");
+
 	int hyperPeriod = getHyperPeriod(init_t_num);
 	int min_slack_time;			// save the minimum slack time
 	int cur_time = 0;			// current time
@@ -247,6 +301,9 @@ void lstf_non_preem(int p_num, int init_t_num) {
 	memset(exec_time, 0, sizeof(exec_time));
 	memset(finish, false, sizeof(finish));
 	memset(slack_time, 0, sizeof(slack_time));
+
+	int end_time[task.size()];
+	memset(end_time, 0, task.size());
 	
 	printf("Hyper period = %d\n", hyperPeriod);
 	printf("Processor %d:\n",processor[0].id + 1);			// single processor
@@ -326,17 +383,41 @@ void lstf_non_preem(int p_num, int init_t_num) {
 		if(task[cur_task_i].exec_t == exec_time[cur_task_i]) {
 			finish[cur_task_i] = true;
 			cpu_exec += task[cur_task_i].exec_t;
+
+			task[cur_task_i].wait_t = cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
+			end_time[cur_task_i] = cur_time;
+
 			wait_time += cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
 			printf("%3d\n", cur_time);
 		}
 	}
 
-	printf("Average Waiting Time = %.2f\n", (float) wait_time/ (float)task.size());
+	float mean = (float) wait_time/(float) task.size();
+	printf("Average Waiting Time = %.2f\n", mean);
 	if(hyperPeriod != 0)
 		printf("CPU utilization = %.2f\n", (float) cpu_exec/ (float) hyperPeriod);
+
+	// calculate miss rate
+	float miss_num = 0.0f;
+	for(int i = 0; i < task.size(); ++i) {
+		if(end_time[i] > task[i].deadline)
+			++miss_num;
+	}
+	printf("Miss rate = %.2f\n", (float) miss_num/task.size());
+
+	// calculate standard deviation and variance
+	float variance = 0.0f;
+	for(int i = 0;i < task.size(); ++i) {
+		variance += (task[i].wait_t - mean)*(task[i].wait_t - mean);
+	}
+	variance /= (task.size()-1);
+	printf("Variation of waiting time = %.2f\n", variance);
+	printf("Standard deviation of waiting time = %.2f\n", sqrt(variance));
 }
 
 void sjf_preem(int p_num, int init_t_num) {
+
+	printf("SJF with preemtion\n");
 
 	int hyperPeriod = getHyperPeriod(init_t_num);
 	int shortest_exec;			// save the shortest job
@@ -353,6 +434,9 @@ void sjf_preem(int p_num, int init_t_num) {
 	int exec_time[task.size()];		// save all current execution time
 	memset(exec_time, 0, sizeof(exec_time));
 	memset(finish, false, sizeof(finish));
+
+	int end_time[task.size()];
+	memset(end_time, 0, task.size());
 	
 	printf("Hyper period = %d\n", hyperPeriod);
 	printf("Processor %d:\n",processor[0].id + 1);			// single processor
@@ -416,18 +500,42 @@ void sjf_preem(int p_num, int init_t_num) {
 		if(task[cur_task_i].exec_t == exec_time[cur_task_i]) {
 			finish[cur_task_i] = true;
 			cpu_exec += task[cur_task_i].exec_t;
+
+			task[cur_task_i].wait_t = cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
+			end_time[cur_task_i] = cur_time;
+
 			wait_time += cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
 			printf("%3d\n", cur_time);
 		}
 	}
 
-	printf("Average Waiting Time = %.2f\n", (float) wait_time/ (float)task.size());
+	float mean = (float) wait_time/(float) task.size();
+	printf("Average Waiting Time = %.2f\n", mean);
 	if(hyperPeriod != 0)
 		printf("CPU utilization = %.2f\n", (float) cpu_exec/ (float) hyperPeriod);
 
+	// calculate miss rate
+	float miss_num = 0.0f;
+	for(int i = 0; i < task.size(); ++i) {
+		if(end_time[i] > task[i].deadline)
+			++miss_num;
+	}
+	printf("Miss rate = %.2f\n", (float) miss_num/task.size());
+
+	// calculate standard deviation and variance
+	float variance = 0.0f;
+	for(int i = 0;i < task.size(); ++i) {
+		variance += (task[i].wait_t - mean)*(task[i].wait_t - mean);
+	}
+	variance /= (task.size()-1);
+	printf("Variation of waiting time = %.2f\n", variance);
+	printf("Standard deviation of waiting time = %.2f\n", sqrt(variance));
 }
 
 void edf_preem(int p_num, int init_t_num) {
+
+	printf("EDF with preemtion\n");
+
 	int hyperPeriod = getHyperPeriod(init_t_num);
 	int deadline;				// save the earliest deadline
 	int cur_time = 0;			// current time
@@ -444,6 +552,10 @@ void edf_preem(int p_num, int init_t_num) {
 	memset(exec_time, 0, sizeof(exec_time));
 	memset(finish, false, sizeof(finish));
 	
+	int end_time[task.size()];
+	memset(end_time, 0, task.size());
+
+
 	printf("Hyper period = %d\n", hyperPeriod);
 	printf("Processor %d:\n",processor[0].id + 1);			// single processor
 	
@@ -504,17 +616,42 @@ void edf_preem(int p_num, int init_t_num) {
 		if(task[cur_task_i].exec_t == exec_time[cur_task_i]) {
 			finish[cur_task_i] = true;
 			cpu_exec += task[cur_task_i].exec_t;
+
+			task[cur_task_i].wait_t = cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
+			end_time[cur_task_i] = cur_time;
+
 			wait_time += cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
 			printf("%3d\n", cur_time);
 		}
 	}
 
-	printf("Average Waiting Time = %.2f\n", (float) wait_time/ (float)task.size());
+	float mean = (float) wait_time/(float) task.size();
+	printf("Average Waiting Time = %.2f\n", mean);
 	if(hyperPeriod != 0)
 		printf("CPU utilization = %.2f\n", (float) cpu_exec/ (float) hyperPeriod);
+
+	// calculate miss rate
+	float miss_num = 0.0f;
+	for(int i = 0; i < task.size(); ++i) {
+		if(end_time[i] > task[i].deadline)
+			++miss_num;
+	}
+	printf("Miss rate = %.2f\n", (float) miss_num/task.size());
+
+	// calculate standard deviation and variance
+	float variance = 0.0f;
+	for(int i = 0;i < task.size(); ++i) {
+		variance += (task[i].wait_t - mean)*(task[i].wait_t - mean);
+	}
+	variance /= (task.size()-1);
+	printf("Variation of waiting time = %.2f\n", variance);
+	printf("Standard deviation of waiting time = %.2f\n", sqrt(variance));
 }
 
 void lstf_preem(int p_num, int init_t_num) {
+
+	printf("LSTF with preemtion\n");
+
 	int hyperPeriod = getHyperPeriod(init_t_num);
 	int min_slack_time;			// save the minimum slack time
 	int cur_time = 0;			// current time
@@ -532,6 +669,10 @@ void lstf_preem(int p_num, int init_t_num) {
 	memset(exec_time, 0, sizeof(exec_time));
 	memset(finish, false, sizeof(finish));
 	memset(slack_time, 0, sizeof(slack_time));
+
+	int end_time[task.size()];
+	memset(end_time, 0, task.size());
+
 	
 	printf("Hyper period = %d\n", hyperPeriod);
 	printf("Processor %d:\n",processor[0].id + 1);			// single processor
@@ -610,14 +751,36 @@ void lstf_preem(int p_num, int init_t_num) {
 		if(task[cur_task_i].exec_t == exec_time[cur_task_i]) {
 			finish[cur_task_i] = true;
 			cpu_exec += task[cur_task_i].exec_t;
+
+			task[cur_task_i].wait_t = cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
+			end_time[cur_task_i] = cur_time;
+
 			wait_time += cur_time - task[cur_task_i].release_t - task[cur_task_i].exec_t;
 			printf("%3d\n", cur_time);
 		}
 	}
 
-	printf("Average Waiting Time = %.2f\n", (float) wait_time/ (float)task.size());
+	float mean = (float) wait_time/(float) task.size();
+	printf("Average Waiting Time = %.2f\n", mean);
 	if(hyperPeriod != 0)
 		printf("CPU utilization = %.2f\n", (float) cpu_exec/ (float) hyperPeriod);
+
+	// calculate miss rate
+	float miss_num = 0.0f;
+	for(int i = 0; i < task.size(); ++i) {
+		if(end_time[i] > task[i].deadline)
+			++miss_num;
+	}
+	printf("Miss rate = %.2f\n", (float) miss_num/task.size());
+
+	// calculate standard deviation and variance
+	float variance = 0.0f;
+	for(int i = 0;i < task.size(); ++i) {
+		variance += (task[i].wait_t - mean)*(task[i].wait_t - mean);
+	}
+	variance /= (task.size()-1);
+	printf("Variation of waiting time = %.2f\n", variance);
+	printf("Standard deviation of waiting time = %.2f\n", sqrt(variance));
 }
 
 int main() {
@@ -659,11 +822,19 @@ int main() {
 
 	/* scheduling and print the result */
 	sjf_non_preem(processor_num, task_num);
+	printf("=====================================================\n");
 	edf_non_preem(processor_num, task_num);
+
+	printf("=====================================================\n");
 	lstf_non_preem(processor_num, task_num);
 
+	printf("=====================================================\n");
 	sjf_preem(processor_num, task_num);
+
+	printf("=====================================================\n");
 	edf_preem(processor_num, task_num);
+
+	printf("=====================================================\n");
 	lstf_preem(processor_num, task_num);
 
 	return 0;

@@ -12,6 +12,7 @@ struct Task {
 	int period;
 	int preemption;
 	int type;
+	int wait_t;
 };
 
 struct Precedence {
